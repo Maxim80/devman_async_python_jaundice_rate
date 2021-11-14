@@ -54,7 +54,7 @@ async def get_charged_worlds():
         async with aiofiles.open(f'./charged_dict/{file_name}') as f:
             words = await f.readlines()
 
-        charged_words.extend(words)
+        charged_words.extend([word.strip() for word in words])
 
     return charged_words
 
@@ -130,13 +130,9 @@ async def test_process_article():
 
 
 if __name__ == '__main__':
-    test_articles = [
+    articles = [
             'https://inosmi.ru/economic/20211105/250847958.html',
             'https://inosmi.ru/economic/20211104/250846376.html',
             'https://inosmi.ru/social/20211110/250870936.html',
-            'https://inosmi.ru/social/20211110/250867022.html',
-            'https://inosmi.ru/social/20211110/250865347.html',
-            'https://inosmi.ru/not/exist.html',
-            'https://lenta.ru/brief/2021/08/26/afg_terror/',
         ]
-    asyncio.run(main(test_articles))
+    asyncio.run(main(articles))
