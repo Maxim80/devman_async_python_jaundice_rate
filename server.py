@@ -4,14 +4,24 @@ from main import get_charged_worlds, process_article
 import pymorphy2
 
 
+ARTICLES_LIMIT = 10
+
+
 class NoDataInQuery(Exception):
+    pass
+
+
+class ExceedingNumberOfRequests(Exception):
     pass
 
 
 def pack_query_to_list(query):
     if not query:
         raise NoDataInQuery
-    return query.split(',')
+    results = query.split(',')
+    if len(results) > ARTICLES_LIMIT:
+        raise ExceedingNumberOfRequests
+    return [res.strip() for res in results]
 
 
 async def process_article_wrapper(urls):
@@ -30,8 +40,12 @@ async def handle(request):
     try:
         query = request.query.get('urls')
         query_values = pack_query_to_list(query)
+
     except (KeyError, NoDataInQuery):
         return web.json_response({'error': 'No data in query.'})
+
+    except ExceedingNumberOfRequests:
+        return web.json_response({"error": "too many urls in request, should be 10 or less"})
 
     json_data = await process_article_wrapper(query_values)
     return web.json_response(json_data)
@@ -45,8 +59,3 @@ app.add_routes([
 
 if __name__ == '__main__':
     web.run_app(app)
-
-"""
-http://0.0.0.0:8080?urls=https://inosmi.ru/economic/20211105/250847958.html,https://inosmi.ru/economic/20211104/250846376.html,https://inosmi.ru/social/20211110/250870936.html,https://inosmi.ru/social/20211110/250867022.html,https://inosmi.ru/social/20211110/250865347.html,https://inosmi.ru/not/exist.html,https://lenta.ru/brief/2021/08/26/afg_terror/
-
-"""
