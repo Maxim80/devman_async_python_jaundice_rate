@@ -42,10 +42,10 @@ async def handle(request):
         query_values = pack_query_to_list(query)
 
     except (KeyError, NoDataInQuery):
-        return web.json_response({'error': 'No data in query.'})
+        return web.json_response({'error': 'No data in query.'}, status=400)
 
     except ExceedingNumberOfRequests:
-        return web.json_response({"error": "too many urls in request, should be 10 or less"})
+        return web.json_response({"error": "too many urls in request, should be 10 or less"}, status=400)
 
     json_data = await process_article_wrapper(query_values)
     return web.json_response(json_data)

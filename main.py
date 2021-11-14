@@ -11,10 +11,14 @@ import pymorphy2
 import os
 import logging
 import time
+import pytest
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('root')
+
+
+CONNECTION_TIMEOUT = 3
 
 
 @contextmanager
@@ -63,7 +67,7 @@ async def fetch(session, url):
 
 async def process_article(session, morph, charged_words, url, processing_results):
     try:
-        async with async_timeout.timeout(3):
+        async with async_timeout.timeout(CONNECTION_TIMEOUT):
             html = await fetch(session, url)
 
         adapter = get_adapter(url)
@@ -99,6 +103,30 @@ async def main(test_articles):
 
     print(*processing_results)
 
+
+@pytest.mark.asyncio
+async def test_process_article():
+    results = []
+    morph = pymorphy2.MorphAnalyzer()
+
+    url = 'https://inosmi.ru/not/exist.html'
+    async with aiohttp.ClientSession() as session:
+        await process_article(session, morph, [], url, results)
+
+    assert results[0]['status'] == 'FETCH_ERROR'
+
+    url = 'https://lenta.ru/brief/2021/08/26/afg_terror/'
+    async with aiohttp.ClientSession() as session:
+        await process_article(session, morph, [], url, results)
+
+    assert results[1]['status'] == 'PARSING_ERROR'
+
+    url = 'https://ya.ru:4060'
+    charged_words = await get_charged_worlds()
+    async with aiohttp.ClientSession() as session:
+        await process_article(session, morph, charged_words, url, results)
+
+    assert results[2]['status'] == 'TIMEOUT'
 
 
 if __name__ == '__main__':
